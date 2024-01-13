@@ -43,11 +43,7 @@ impl<M: Middleware, S: Signer> ExecutableTransaction<M, S> {
 
         info!("Transaction submitted. Awaiting block confirmations...");
 
-        let tx_confirmation = pending_tx
-            .confirmations(4)
-            .interval(Duration::from_secs(5))
-            .retries(100)
-            .await?;
+        let tx_confirmation = pending_tx.await?;
 
         let tx_receipt = match tx_confirmation {
             Some(receipt) => receipt,
