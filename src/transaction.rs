@@ -4,6 +4,7 @@ use ethers::providers::Middleware;
 use ethers::signers::Signer;
 use ethers::types::{Eip1559TransactionRequest, TransactionReceipt};
 use ethers::utils::hex;
+use std::time::Duration;
 use tracing::info;
 
 pub struct ExecutableTransaction<M: Middleware, S: Signer> {
@@ -44,7 +45,7 @@ impl<M: Middleware, S: Signer> ExecutableTransaction<M, S> {
 
         let tx_confirmation = pending_tx
             .confirmations(4)
-            .interval(Duration::secs(5))
+            .interval(Duration::from_secs(5))
             .retries(100)
             .await?;
 
