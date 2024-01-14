@@ -1,9 +1,13 @@
-use ethers::middleware::SignerMiddleware;
+use ethers::middleware::gas_oracle::{GasOracleMiddleware, ProviderOracle};
+use ethers::middleware::{MiddlewareBuilder, SignerMiddleware};
 use ethers::prelude::{Http, Provider};
 use ethers_signers::{HDPath, Ledger};
 
 pub struct LedgerClient {
-    pub client: SignerMiddleware<Provider<Http>, Ledger>,
+    pub client: GasOracleMiddleware<
+        SignerMiddleware<Provider<Http>, Ledger>,
+        ProviderOracle<Provider<Http>>,
+    >,
 }
 
 impl LedgerClient {
@@ -18,7 +22,11 @@ impl LedgerClient {
         )
         .await?;
         let provider = Provider::<Http>::try_from(rpc_url.clone())?;
-        let client = SignerMiddleware::new_with_provider_chain(provider, wallet).await?;
+        let client = provider
+            .clone()
+            .with_signer(wallet)
+            .wrap_into(|s| GasOracleMiddleware::new(s, ProviderOracle::new(provider)));
+
         Ok(Self { client })
     }
 }
