@@ -1,10 +1,12 @@
+use std::time::Duration;
+
 use crate::request_shim::{AlloyTransactionRequest, TransactionRequestShim};
+use anyhow::Result;
 use ethers::middleware::SignerMiddleware;
-use ethers::providers::Middleware;
+use ethers::providers::{Middleware, PendingTransaction};
 use ethers::signers::Signer;
 use ethers::types::{Eip1559TransactionRequest, TransactionReceipt};
 use ethers::utils::hex;
-use std::time::Duration;
 use tracing::info;
 
 pub struct ExecutableTransaction<M: Middleware, S: Signer> {
@@ -43,7 +45,11 @@ impl<M: Middleware, S: Signer> ExecutableTransaction<M, S> {
 
         info!("Transaction submitted. Awaiting block confirmations...");
 
-        let tx_confirmation = pending_tx.await?;
+        let tx_confirmation = pending_tx
+            .confirmations(4)
+            .interval(Duration::from_secs(15))
+            .retries(6)
+            .await?;
 
         let tx_receipt = match tx_confirmation {
             Some(receipt) => receipt,
