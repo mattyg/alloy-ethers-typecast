@@ -2,11 +2,12 @@ use crate::request_shim::{AlloyTransactionRequest, TransactionRequestShim};
 use ethers::middleware::SignerMiddleware;
 use ethers::providers::Middleware;
 use ethers::signers::Signer;
+use ethers::types::transaction::eip2718::TypedTransaction;
 use ethers::types::{Eip1559TransactionRequest, TransactionReceipt};
 use ethers::utils::hex;
 use tracing::info;
 
-pub struct ExecutableTransaction<M: Middleware, S: Signer> {
+pub struct ExecutableTransaction<M: 'static + Middleware, S: 'static + Signer> {
     pub transaction_request: Eip1559TransactionRequest,
     pub client: SignerMiddleware<M, S>,
 }
@@ -34,6 +35,12 @@ impl<M: Middleware, S: Signer> ExecutableTransaction<M, S> {
 
     // Execute the transaction
     pub async fn execute(&self) -> anyhow::Result<TransactionReceipt> {
+        let mut tx = TypedTransaction::Eip1559(self.transaction_request.clone());
+        info!("Transaction Request {:?}", tx);
+
+        self.client.fill_transaction(&mut tx, None).await?;
+        info!("Transaction Request Filled {:?}", tx);
+
         let pending_tx = self
             .client
             .send_transaction(self.transaction_request.clone(), None)
