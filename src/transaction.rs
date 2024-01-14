@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use crate::request_shim::{AlloyTransactionRequest, TransactionRequestShim};
 use anyhow::Result;
-use ethers::middleware::SignerMiddleware;
+use ethers::middleware::{GasEscalatorMiddleware, SignerMiddleware};
 use ethers::providers::{Middleware, PendingTransaction};
 use ethers::signers::Signer;
 use ethers::types::{Eip1559TransactionRequest, TransactionReceipt};
@@ -44,7 +44,10 @@ impl<M: Middleware, S: Signer> ExecutableTransaction<M, S> {
             .map_err(|err| anyhow::anyhow!("{}", err))?;
 
         info!("Transaction submitted. Awaiting block confirmations...");
-
+        info!(
+            "Pending Transaction Hash: 0x{}",
+            hex::encode(pending_tx.tx_hash().as_bytes())
+        );
         let tx_confirmation = pending_tx
             .confirmations(4)
             .interval(Duration::from_secs(15))
